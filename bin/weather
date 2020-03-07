@@ -1,0 +1,52 @@
+#!/home/cloud_user/venvs/experiment/bin/python3
+
+import os
+import requests
+import sys
+import json
+import datetime
+from argparse import ArgumentParser
+
+#get and parse arguments from command line
+parser = ArgumentParser(description="get the current weather info for your zipcode")
+parser.add_argument('zip', help='zip/postal code to get weather for')
+parser.add_argument('--country', default='us', help='country zip belongs to, default is us')
+parser.add_argument('--units', default='imperial', help='metric or imperial, default is imperial')
+args = parser.parse_args()
+
+#get api key from environment variables
+api_key = os.getenv("OWM_API_KEY")
+
+#fail if you can't find api key
+if not api_key:
+    print("Error: no 'OWM_API_KEY' provided")
+    sys.exit(1)
+
+#fail if units is not imperial or metric
+if args.units not in ['imperial', 'metric']:
+    print("Error: units not set to imperial or metric")
+    sys.exit(1)
+
+#get json from web
+url = f"https://api.openweathermap.org/data/2.5/weather?zip={args.zip},{args.country}&appid={api_key}&units={args.units}"
+res = requests.get(url)
+
+#fail if result is not successful
+if res.status_code != 200:
+    print(f"Error talking to weather provider: {res.status_code}")
+    sys.exit(1)
+
+#print(f"{res.json()}\n\n")
+
+#make result a dictionary
+this_dic = res.json()
+
+#convert wind direction from degrees to directions
+dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+ix = round(this_dic['wind']['deg'] / (360. / len(dirs)))
+wind_dir = dirs[ix % len(dirs)]
+
+#print the results
+print(f"The current weather for {this_dic['name']} is: {this_dic['weather'][0]['main']}\nTemperature is: {this_dic['main']['temp']}F\nHigh/Lows: {this_dic['main']['temp_max']}/{this_dic['main']['temp_min']}\nWind: {this_dic['wind']['speed']} MPH blowing {wind_dir}\nSunrise: {datetime.datetime.fromtimestamp(this_dic['sys']['sunrise'] + this_dic['timezone']).strftime('%H:%M:%S')}\nSunset: {datetime.datetime.fromtimestamp(this_dic['sys']['sunset'] + this_dic['timezone']).strftime('%H:%M:%S')}")
+
+
