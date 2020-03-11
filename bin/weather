@@ -36,7 +36,7 @@ if res.status_code != 200:
     print(f"Error talking to weather provider: {res.status_code}")
     sys.exit(1)
 
-#print(f"{res.json()}\n\n")
+print(f"{res.json()}\n\n")
 
 #make result a dictionary
 this_dic = res.json()
